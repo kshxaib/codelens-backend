@@ -71,12 +71,18 @@ async def github_callback(request: Request, code: str, db: Session = Depends(get
         user = db.query(User).filter(User.github_id == github_id).first()
 
         if not user:
-            user = User(github_id=github_id, username=username, avatar_url=avatar_url)
+            user = User(
+                github_id=github_id, 
+                username=username, 
+                avatar_url=avatar_url,
+                github_access_token=access_token
+            )
             db.add(user)
 
         else:
             user.username = username
             user.avatar_url = avatar_url
+            user.github_access_token = access_token
         
         db.commit()
         db.refresh(user)
