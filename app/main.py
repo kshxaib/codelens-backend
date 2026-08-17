@@ -3,10 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.db.database import engine
-from app.auth.routes import router as auth_router
 from app.auth.session import configure_session
+from app.auth.routes import router as auth_router
 from app.repositories.routes import router as repository_router
-
 
 app = FastAPI(
     title="CodeLens API",

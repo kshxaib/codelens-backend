@@ -126,6 +126,12 @@ class Repository(Base):
         nullable=True
     )
 
+    # Indexing ke time kitne files scan hue
+    file_count: Mapped[int] = mapped_column(
+        default=0,
+        nullable=False
+    )
+
     # Indexing ke time kitne symbols mile
     # Example: functions, classes, methods etc.
     # Initially 0, later indexing/parsing ke baad actual count
