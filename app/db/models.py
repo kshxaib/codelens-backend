@@ -214,3 +214,94 @@ class RepositoryAccess(Base):
             name="uq_user_repository_access"
         ),
     )
+
+
+
+# FILE MODEL: Ye table repository ke andar scan hui files ki metadata store karegi.
+class File(Base):
+    __tablename__ = "files"
+
+    # CodeLens database me file ki unique ID
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        autoincrement=True
+    )
+
+    # Ye file kis repository ke andar hai
+    repository_id: Mapped[int] = mapped_column(
+        ForeignKey(
+            "repositories.id",
+            ondelete="CASCADE"
+        ),
+        nullable=False,
+        index=True
+    )
+
+    # Repository ke root se relative file path
+    # Example: src/auth/login.py
+    file_path: Mapped[str] = mapped_column(
+        String(1000),
+        nullable=False
+    )
+
+    # Detected programming language
+    # Example: python, javascript, typescript, java
+    language: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True
+    )
+
+    # File ka size bytes me
+    file_size: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        default=0
+    )
+
+    # File ke andar total lines
+    line_count: Mapped[int] = mapped_column(
+        default=0,
+        nullable=False
+    )
+
+    # File ka SHA-256 hash
+    # Later incremental indexing me help karega: old hash != new hash -> file changed
+    file_hash: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True
+    )
+
+    # Actual source code
+    # Phase 4 me source extract karenge.
+    # Later chunking pipeline isi content ko use kar sakti hai.
+    content: Mapped[str | None] = mapped_column(
+        nullable=True
+    )
+
+    # File kab scan hui
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    # File record last kab update hua
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    # Same repository me same path duplicate nahi hona chahiye
+    __table_args__ = (
+        UniqueConstraint(
+            "repository_id",
+            "file_path",
+            name="uq_repository_file"
+        ),
+    )
+
+
+
+    
