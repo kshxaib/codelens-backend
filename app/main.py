@@ -1,5 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+
+from app.db.database import engine
+
 
 app = FastAPI(
     title="CodeLens API",
@@ -27,3 +31,16 @@ def health_check():
         "status": "ok",
         "service": "codelens-backend"
     }
+
+
+@app.get("/api/health/db")
+def database_health_check():
+    with engine.connect() as connection:
+        result = connection.execute(text("SELECT 1"))
+        value = result.scalar()
+
+        return {
+            "status": "ok",
+            "database": "postgresql",
+            "result": value
+        }
