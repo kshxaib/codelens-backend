@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.db.models import User
+from app.auth.dependencies import get_current_user
+
 
 from app.core.config import (
     GITHUB_CLIENT_ID,
@@ -86,3 +88,14 @@ async def github_callback(request: Request, code: str, db: Session = Depends(get
         url=f"{FRONTEND_URL}/dashboard",
         status_code=303
     )
+
+
+
+@router.get("/me")
+async def get_me(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "github_id": current_user.github_id,
+        "username": current_user.username,
+        "avatar_url": current_user.avatar_url
+    }
