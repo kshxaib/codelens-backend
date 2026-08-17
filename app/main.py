@@ -12,10 +12,12 @@ app = FastAPI(
     version="0.1.0"
 )
 
+
 # Frontend development server
 origins = [
     "http://localhost:5173",
 ]
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,7 +27,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 app.include_router(auth_router)
+
 
 @app.get("/api/health")
 def health_check():
@@ -41,8 +45,8 @@ def database_health_check():
         result = connection.execute(text("SELECT 1"))
         value = result.scalar()
 
-        return {
-            "status": "ok",
-            "database": "postgresql",
-            "result": value
-        }
+    return {
+        "status": "ok",
+        "database": "postgresql",
+        "result": value
+    }

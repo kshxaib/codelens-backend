@@ -1,6 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import RedirectResponse
 import httpx
+from sqlalchemy.orm import Session
+
+from app.db.database import get_db
+from app.db.models import User
 
 from app.core.config import (
     GITHUB_CLIENT_ID,
@@ -23,7 +27,7 @@ async def github_login():
 
 
 @router.get("/github/callback")
-async def github_callback(code: str):
+async def github_callback(code: str, db: Session = Depends(get_db)):
     async with httpx.AsyncClient() as client:
 
         token_response = await client.post(
@@ -57,7 +61,29 @@ async def github_callback(code: str):
 
         github_user = user_response.json()
 
+        github_id = github_user["id"]
+        username = github_user["login"]
+        avatar_url = github_user.get("avatar_url")
+        
+        user = db.query(User).filter(User.github_id == github_id).first()
+
+        if not user:
+            user = User(github_id=github_id, username=username, avatar_url=avatar_url)
+            db.add(user)
+
+        else:
+            user.username = username
+            user.avatar_url = avatar_url
+        
+        db.commit()
+        db.refresh(user)
+
     return {
         "message": "GitHub login successful",
-        "github_user": github_user,
+        "user": {
+            "id": user.id,
+            "github_id": user.github_id,
+            "username": user.username,
+            "avatar_url": user.avatar_url
+        }
     }
