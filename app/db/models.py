@@ -150,6 +150,9 @@ class Repository(Base):
 
 
 # REPOSITORY ACCESS MODEL: Kaunsa user kis repository ko access kar sakta hai?
+#USER <-> REPOSITORY ACCESS
+#Repository table sirf repository ki information rakhti hai.
+#Ye check karta hai ki CURRENT USER ko is repository ka access hai ya nahi.
 class RepositoryAccess(Base):
     __tablename__ = "repository_access"
     
