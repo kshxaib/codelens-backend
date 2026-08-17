@@ -6,6 +6,7 @@ from app.db.database import engine
 from app.auth.session import configure_session
 from app.auth.routes import router as auth_router
 from app.repositories.routes import router as repository_router
+from app.indexing.routes import router as indexing_router
 
 app = FastAPI(
     title="CodeLens API",
@@ -33,6 +34,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(repository_router)
+app.include_router(indexing_router)
 
 
 @app.get("/api/health")
