@@ -99,3 +99,13 @@ async def get_me(current_user: User = Depends(get_current_user)):
         "username": current_user.username,
         "avatar_url": current_user.avatar_url
     }
+
+
+
+@router.post("/logout")
+async def logout(request: Request):
+    request.session.clear()
+
+    return {
+        "message": "Logged out successfully"
+    }
