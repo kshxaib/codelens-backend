@@ -15,8 +15,7 @@ class GitHubService:
 
     async def get_repositories(self):
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{GITHUB_API_URL}/user/repos",
+            response = await client.get(f"{GITHUB_API_URL}/user/repos",
                 headers=self._headers(),
                 params={
                     "per_page": 100,
