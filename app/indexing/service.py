@@ -72,73 +72,39 @@ class RepositoryIndexer:
 
         try:
 
-            # ------------------------------------------------
             # 1. Clone
-            # ------------------------------------------------
-            self.clone_repository(
-                temp_directory
-            )
+            self.clone_repository(temp_directory)
 
-            # ------------------------------------------------
             # 2. Get commit SHA
-            # ------------------------------------------------
-            commit_sha = self.get_commit_sha(
-                temp_directory
-            )
+            commit_sha = self.get_commit_sha(temp_directory)
 
-            # ------------------------------------------------
             # 3. Scan + ignore + language detection
-            # ------------------------------------------------
-            scanned_files = scan_repository(
-                temp_directory
-            )
+            scanned_files = scan_repository(temp_directory)
 
-            # ------------------------------------------------
             # 4. Remove old file records
-            #
             # Phase 4 me full re-index kar rahe hain.
             # Incremental indexing later implement hoga.
-            # ------------------------------------------------
             db.query(File).filter(
-                File.repository_id
-                == self.repository.id
+                File.repository_id == self.repository.id
             ).delete(
                 synchronize_session=False
             )
 
-            # ------------------------------------------------
             # 5. Save scanned files
-            # ------------------------------------------------
             for file_data in scanned_files:
+                db.add(File(repository_id=self.repository.id, **file_data))
 
-                db.add(
-                    File(
-                        repository_id=self.repository.id,
-                        **file_data,
-                    )
-                )
-
-            # ------------------------------------------------
             # 6. Update repository metadata
-            # ------------------------------------------------
             self.repository.index_status = "indexed"
 
-            self.repository.last_indexed_commit = (
-                commit_sha
-            )
+            self.repository.last_indexed_commit = commit_sha
 
             from datetime import datetime
+            self.repository.last_indexed_at = datetime.utcnow()
 
-            self.repository.last_indexed_at = (
-                datetime.utcnow()
-            )
+            self.repository.file_count = len(scanned_files)
 
-            self.repository.file_count = (
-                len(scanned_files)
-            )
-
-            # Phase 4 me AST nahi hai,
-            # isliye symbols abhi 0 hain.
+            # Phase 4 me AST nahi hai, isliye symbols abhi 0 hain.
             self.repository.symbol_count = 0
 
             db.commit()
@@ -151,19 +117,11 @@ class RepositoryIndexer:
             }
 
         except Exception:
-
             db.rollback()
-
             self.repository.index_status = "failed"
-
             db.commit()
-
             raise
 
         finally:
-
             # Temporary clone delete kar do
-            shutil.rmtree(
-                temp_directory,
-                ignore_errors=True
-            )
+            shutil.rmtree(temp_directory, ignore_errors=True)
