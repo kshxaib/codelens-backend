@@ -45,7 +45,7 @@ class RepositoryIndexer:
                 f"Git clone failed: {result.stderr}"
             )
 
-
+ 
     # GET CURRENT COMMIT SHA
     def get_commit_sha(self, repo_path: str) -> str:
         result = subprocess.run(
