@@ -1,10 +1,14 @@
+import os
 from openai import OpenAI
 
 from app.rag.embeddings import create_embedding
 from app.rag.vector_store import search_chunks
 
 
-client = OpenAI()
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+)
 
 
 # Qdrant se aaye relevant code chunks ko ek single text/context mein combine karna
@@ -46,10 +50,10 @@ def ask_repository( question: str, repository_id: int):
     context = build_context(results)
 
     # 4. Ask OpenAI
-    response = client.responses.create(
-        model="gpt-4o",
-
-        input=[
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-20b:free",
+ 
+        messages=[
             {
                 "role": "system",
                 "content": (
@@ -82,7 +86,7 @@ def ask_repository( question: str, repository_id: int):
         })
 
     return {
-        "answer": response.output_text,
+        "answer": response.choices[0].message.content,
         "sources": sources,
     }
 
