@@ -2,9 +2,13 @@ import os
 import shutil
 import subprocess
 import tempfile
+import uuid
 
 from app.db.models import Repository, File
 from app.indexing.scanner import scan_repository
+from app.rag.chunker import chunk_code
+from app.rag.embeddings import create_embedding
+from app.rag.vector_store import create_collection, store_chunks
 
 
 class RepositoryIndexer:
@@ -66,35 +70,76 @@ class RepositoryIndexer:
 
     # INDEX REPOSITORY
     def index(self, db):
+
+        # 1. Ensure Qdrant collection exists
+        create_collection()    
+
         temp_directory = tempfile.mkdtemp(
             prefix="codelens-"
         )
 
         try:
 
-            # 1. Clone
+            # 2. Clone repository
             self.clone_repository(temp_directory)
 
-            # 2. Get commit SHA
+
+            # 3. Get commit SHA
             commit_sha = self.get_commit_sha(temp_directory)
 
-            # 3. Scan + ignore + language detection
+
+            # 4. Scan repository
             scanned_files = scan_repository(temp_directory)
 
-            # 4. Remove old file records
-            # Phase 4 me full re-index kar rahe hain.
-            # Incremental indexing later implement hoga.
+
+            # 5. Remove old PostgreSQL file records for full re-index
             db.query(File).filter(
                 File.repository_id == self.repository.id
             ).delete(
                 synchronize_session=False
             )
+            db.flush()   # Database me changes save
 
-            # 5. Save scanned files
+
+            # 6. Save scanned files in PostgreSQL
+            file_records = []
+
             for file_data in scanned_files:
-                db.add(File(repository_id=self.repository.id, **file_data))
+                file_record = File(repository_id=self.repository.id, **file_data)
+                db.add(file_record)
+                file_records.append(file_record)
+            db.flush()  # Database IDs generate karwao
 
-            # 6. Update repository metadata
+
+            # 7. Create chunks for Qdrant
+            chunks_for_qdrant = []
+            for file_record in file_records:
+                chunks = chunk_code(file_record.content)
+
+                for chunk in chunks:
+                    chunks_for_qdrant.append({
+                        "id": str(uuid.uuid4()),
+                        "repository_id": self.repository.id,
+                        "file_id": file_record.id,
+                        "file_path": file_record.file_path,
+                        "language": file_record.language,
+                        "start_line": chunk["start_line"],
+                        "end_line": chunk["end_line"],
+                        "content": chunk["content"],
+                    })
+
+            
+            # 8. Create embedding for every chunk
+            for chunk in chunks_for_qdrant:
+                chunk["embedding"] = create_embedding(chunk["content"])
+                
+
+            # 9. Store chunks + embeddings in Qdrant
+            if chunks_for_qdrant:
+                store_chunks(chunks_for_qdrant)
+
+
+            # 10. Update repository metadata
             self.repository.index_status = "indexed"
 
             self.repository.last_indexed_commit = commit_sha
@@ -107,6 +152,7 @@ class RepositoryIndexer:
             # Phase 4 me AST nahi hai, isliye symbols abhi 0 hain.
             self.repository.symbol_count = 0
 
+            # 11. Save PostgreSQL changes
             db.commit()
 
             return {
@@ -125,3 +171,5 @@ class RepositoryIndexer:
         finally:
             # Temporary clone delete kar do
             shutil.rmtree(temp_directory, ignore_errors=True)
+
+
