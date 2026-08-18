@@ -339,3 +339,5 @@ def parse_github_url(url: str):
 
     # Parsed values return karo
     return owner, name
+
+

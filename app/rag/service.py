@@ -53,10 +53,10 @@ def ask_repository( question: str, repository_id: int):
             {
                 "role": "system",
                 "content": (
-                    "You are CodeLens, a codebase intelligence assistant. "
-                    "Answer only using the provided repository context. "
-                    "If the context does not contain the answer, say so. "
-                    "Mention relevant file paths and line ranges when possible."
+                    "You are CodeLens, a codebase intelligence assistant.\n\n"
+                    "Answer only using the provided repository context. \n\n"
+                    "If the context does not contain enough information to answer the question, say that clearly instead of guessing.\n\n"
+                    "When possible, mention the relevant file paths and line ranges."
                 ),
             },
             {
@@ -85,3 +85,6 @@ def ask_repository( question: str, repository_id: int):
         "answer": response.output_text,
         "sources": sources,
     }
+
+
+
