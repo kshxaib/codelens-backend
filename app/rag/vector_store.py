@@ -85,3 +85,22 @@ def search_chunks(query_embedding, repository_id: int, limit: int = 5):
     )
 
     return results.points
+
+
+# Index start hone par selected repository ke purane Qdrant points delete karo
+def delete_repository_chunks( repository_id: int ):
+
+    client.delete(
+        collection_name=COLLECTION_NAME,
+
+        points_selector=models.FilterSelector(
+            filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="repository_id",
+                        match=models.MatchValue(value=repository_id),
+                    )
+                ]
+            )
+        ),
+    )
