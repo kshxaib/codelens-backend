@@ -28,3 +28,31 @@ def create_collection():
                 distance=models.Distance.COSINE,
         ),
     )
+
+
+# Store chunks into vectorDB with metadata and vector embedding
+def store_chunks(chunks):
+    points = []
+
+    for chunk in chunks:
+        # Append chunks to the points list
+        points.append(
+            models.PointStruct(
+                id=chunk["id"],
+                vector=chunk["embedding"],
+                payload={
+                    "repository_id": chunk["repository_id"],
+                    "file_id": chunk["file_id"],
+                    "file_path": chunk["file_path"],
+                    "language": chunk["language"],
+                    "start_line": chunk["start_line"],
+                    "end_line": chunk["end_line"],
+                    "content": chunk["content"],
+                },
+            )
+        )
+
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=points,
+    )
