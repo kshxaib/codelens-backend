@@ -7,6 +7,7 @@ from app.rag.vector_store import search_chunks
 client = OpenAI()
 
 
+# Qdrant se aaye relevant code chunks ko ek single text/context mein combine karna
 def build_context(results):
     context_parts = []
 
@@ -21,9 +22,7 @@ def build_context(results):
             """
         )
 
-    return "\n\n---\n\n".join(
-        context_parts
-    )
+    return "\n\n---\n\n".join(context_parts)
 
 
 def ask_repository( question: str, repository_id: int):
@@ -37,17 +36,14 @@ def ask_repository( question: str, repository_id: int):
         limit=5,
     )
 
-
     if not results:
         return {
             "answer": "I could not find relevant code in this repository.",
             "sources": [],
         }
 
-
     # 3. Build context
     context = build_context(results)
-
 
     # 4. Ask OpenAI
     response = client.responses.create(
@@ -57,14 +53,10 @@ def ask_repository( question: str, repository_id: int):
             {
                 "role": "system",
                 "content": (
-                    "You are CodeLens, a codebase "
-                    "intelligence assistant. "
-                    "Answer only using the provided "
-                    "repository context. "
-                    "If the context does not contain "
-                    "the answer, say so. "
-                    "Mention relevant file paths and "
-                    "line ranges when possible."
+                    "You are CodeLens, a codebase intelligence assistant. "
+                    "Answer only using the provided repository context. "
+                    "If the context does not contain the answer, say so. "
+                    "Mention relevant file paths and line ranges when possible."
                 ),
             },
             {
@@ -78,28 +70,18 @@ def ask_repository( question: str, repository_id: int):
         ],
     )
 
-
-    # ========================================================
     # 5. Return answer + sources
-    # ========================================================
+    sources = []
+
+    for result in results:
+        sources.append({
+            "file_path": result.payload["file_path"],
+            "start_line": result.payload["start_line"],
+            "end_line": result.payload["end_line"],
+            "score": result.score,
+        })
 
     return {
         "answer": response.output_text,
-
-        "sources": [
-            {
-                "file_path":
-                    result.payload["file_path"],
-
-                "start_line":
-                    result.payload["start_line"],
-
-                "end_line":
-                    result.payload["end_line"],
-
-                "score":
-                    result.score,
-            }
-            for result in results
-        ],
+        "sources": sources,
     }
