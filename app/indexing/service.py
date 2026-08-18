@@ -160,6 +160,7 @@ class RepositoryIndexer:
             return {
                 "commit_sha": commit_sha,
                 "files_scanned": len(scanned_files),
+                "chunks_created": len(chunks_for_qdrant),
                 "symbols_found": 0,
                 "status": "indexed",
             }
