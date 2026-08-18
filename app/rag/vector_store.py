@@ -56,3 +56,32 @@ def store_chunks(chunks):
         collection_name=COLLECTION_NAME,
         points=points,
     )
+
+
+
+def search_chunks(query_embedding, repository_id: int, limit: int = 5):
+    results = client.query_points(
+        collection_name=COLLECTION_NAME,
+
+        # Question ka embedding
+        query=query_embedding,
+
+        # Sirf selected repository ke chunks search karo
+        query_filter=models.Filter(
+            must=[
+                models.FieldCondition(key="repository_id",
+                    match=models.MatchValue(
+                        value=repository_id
+                    ),
+                )
+            ]
+        ),
+
+        # Top 5 results
+        limit=limit,
+
+        # Metadata + content return karo
+        with_payload=True,
+    )
+
+    return results.points
