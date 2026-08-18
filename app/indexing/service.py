@@ -8,7 +8,7 @@ from app.db.models import Repository, File
 from app.indexing.scanner import scan_repository
 from app.rag.chunker import chunk_code
 from app.rag.embeddings import create_embedding
-from app.rag.vector_store import create_collection, store_chunks
+from app.rag.vector_store import create_collection, store_chunks, delete_repository_chunks
 
 
 class RepositoryIndexer:
@@ -92,13 +92,15 @@ class RepositoryIndexer:
             scanned_files = scan_repository(temp_directory)
 
 
-            # 5. Remove old PostgreSQL file records for full re-index
+            # 5. Remove old PostgreSQL file records and Qdrant chunks for full re-index
             db.query(File).filter(
                 File.repository_id == self.repository.id
             ).delete(
                 synchronize_session=False
             )
             db.flush()   # Database me changes save
+
+            delete_repository_chunks(self.repository.id)
 
 
             # 6. Save scanned files in PostgreSQL
