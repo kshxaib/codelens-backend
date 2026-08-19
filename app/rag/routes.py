@@ -6,7 +6,7 @@ from app.auth.dependencies import get_current_user
 from app.db.database import get_db
 from app.db.models import User, Repository, RepositoryAccess
 
-from app.rag.service import ask_repository
+from app.rag.service import ask_repository, stream_repository_answer
 
 
 router = APIRouter(
@@ -20,8 +20,8 @@ class AskRepositoryRequest(BaseModel):
     question: str
 
 
-# ASK REPOSITORY: Non-Streaming API
-@router.post("/{repository_id}/ask")
+# ASK REPOSITORY: 
+@router.post("/{repository_id}/ask/stream")
 def ask_repository_endpoint(repository_id: int, request: AskRepositoryRequest, 
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
@@ -77,7 +77,7 @@ def ask_repository_endpoint(repository_id: int, request: AskRepositoryRequest,
 
     # STEP 5 — RUN RAG
     try:
-        result = ask_repository(question=question, repository_id=repository_id)
+        result = stream_repository_answer(question=question, repository_id=repository_id)
         return result
 
     except Exception as error:
