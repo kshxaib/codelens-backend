@@ -1,6 +1,7 @@
 import hashlib
 import os
 from pathlib import Path
+import re
 
 from app.indexing.language import detect_language
 
@@ -153,3 +154,41 @@ def scan_repository(repo_path: str):
             })
 
     return files
+
+
+
+# BASIC SYMBOL EXTRACTION
+def detect_symbol(content: str,start_line: int,end_line: int,language: str | None):
+    if not content or not language:
+        return None
+
+    lines = content.splitlines()
+
+    # Chunk ke andar lines check karo
+    for line in lines:
+        stripped = line.strip()
+
+        # Python function
+        if language == "python":
+            match = re.match(r"def\s+([A-Za-z_][A-Za-z0-9_]*)", stripped)
+            if match:
+                return match.group(1)
+
+            # Python class
+            match = re.match(r"class\s+([A-Za-z_][A-Za-z0-9_]*)", stripped)
+            if match:
+                return match.group(1)
+
+
+        # JavaScript / TypeScript function
+        if language in ("javascript", "typescript"):
+            match = re.match(r"(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_][A-Za-z0-9_]*)",stripped)
+            if match:
+                return match.group(1)
+
+            # JS/TS class
+            match = re.match(r"(?:export\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)",stripped)
+            if match:
+                return match.group(1)
+
+    return None
