@@ -1,12 +1,14 @@
+import json
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from fastapi.responses import StreamingResponse
 
 from app.auth.dependencies import get_current_user
 from app.db.database import get_db
 from app.db.models import User, Repository, RepositoryAccess
 
-from app.rag.service import ask_repository, stream_repository_answer
+from app.rag.service import stream_repository_answer
 
 
 router = APIRouter(
@@ -74,15 +76,26 @@ def ask_repository_endpoint(repository_id: int, request: AskRepositoryRequest,
             detail="Question cannot be empty",
         )
 
+    # STEP 5 — GENERATE STREAM
+    def generate():
+        try:
+            for event in stream_repository_answer(
+                question=question,
+                repository_id=repository_id,
+            ):
+                yield (f"data: "f"{json.dumps(event)}"f"\n\n")
 
-    # STEP 5 — RUN RAG
-    try:
-        result = stream_repository_answer(question=question, repository_id=repository_id)
-        return result
+            yield "data: [DONE]\n\n"
 
-    except Exception as error:
+        except Exception:
+            yield ("data: "+ json.dumps({"type": "error","message": "Failed to generate answer"}) + "\n\n")
 
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to answer repository question",
-        )
+    # STEP 6 — RETURN SSE STREAM
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
