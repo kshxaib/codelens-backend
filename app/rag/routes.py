@@ -20,7 +20,7 @@ class AskRepositoryRequest(BaseModel):
     question: str
 
 
-# ASK REPOSITORY
+# ASK REPOSITORY: Non-Streaming API
 @router.post("/{repository_id}/ask")
 def ask_repository_endpoint(repository_id: int, request: AskRepositoryRequest, 
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
