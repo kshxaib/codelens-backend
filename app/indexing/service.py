@@ -5,7 +5,7 @@ import tempfile
 import uuid
 
 from app.db.models import Repository, File
-from app.indexing.scanner import scan_repository
+from app.indexing.scanner import scan_repository,detect_symbol
 from app.rag.chunker import chunk_code
 from app.rag.embeddings import create_embedding
 from app.rag.vector_store import create_collection, store_chunks, delete_repository_chunks
@@ -119,6 +119,13 @@ class RepositoryIndexer:
                 chunks = chunk_code(file_record.content)
 
                 for chunk in chunks:
+                    symbol = detect_symbol(
+                        content=chunk["content"],
+                        start_line=chunk["start_line"],
+                        end_line=chunk["end_line"],
+                        language=file_record.language,
+                    )
+
                     chunks_for_qdrant.append({
                         "id": str(uuid.uuid4()),
                         "repository_id": self.repository.id,
@@ -128,6 +135,7 @@ class RepositoryIndexer:
                         "start_line": chunk["start_line"],
                         "end_line": chunk["end_line"],
                         "content": chunk["content"],
+                        "symbol": symbol,
                     })
 
             
@@ -167,8 +175,6 @@ class RepositoryIndexer:
 
         except Exception:
             db.rollback()
-            self.repository.index_status = "failed"
-            db.commit()
             raise
 
         finally:

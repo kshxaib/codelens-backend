@@ -48,6 +48,7 @@ def store_chunks(chunks):
                     "start_line": chunk["start_line"],
                     "end_line": chunk["end_line"],
                     "content": chunk["content"],
+                    "symbol": chunk["symbol"],
                 },
             )
         )

@@ -182,13 +182,30 @@ def detect_symbol(content: str,start_line: int,end_line: int,language: str | Non
 
         # JavaScript / TypeScript function
         if language in ("javascript", "typescript"):
-            match = re.match(r"(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_][A-Za-z0-9_]*)",stripped)
+            # function name() / export async function name()
+            match = re.match(r"(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][A-Za-z0-9_$]*)",stripped)
+            if match:
+                return match.group(1)
+
+            # const name = ... / export const name = ...
+            # Covers arrow functions, asyncHandler wrappers, React components, etc.
+            # e.g. export const login = asyncHandler(async (req, res) => {
+            # e.g. const App = () => {
+            match = re.match(r"(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=",stripped)
             if match:
                 return match.group(1)
 
             # JS/TS class
-            match = re.match(r"(?:export\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)",stripped)
+            match = re.match(r"(?:export\s+)?class\s+([A-Za-z_$][A-Za-z0-9_$]*)",stripped)
             if match:
                 return match.group(1)
+
+            # Object method: name(params) {
+            match = re.match(r"(?:async\s+)?([A-Za-z_$][A-Za-z0-9_$]*)\s*\([^)]*\)\s*\{",stripped)
+            if match:
+                name = match.group(1)
+                # if/for/while/switch etc. ko skip karo
+                if name not in ("if", "for", "while", "switch", "catch", "else"):
+                    return name
 
     return None

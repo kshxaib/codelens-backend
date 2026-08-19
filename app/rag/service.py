@@ -80,9 +80,10 @@ def ask_repository( question: str, repository_id: int):
 
     for result in results:
         sources.append({
-            "file_path": result.payload["file_path"],
+            "file": result.payload["file_path"],
             "start_line": result.payload["start_line"],
             "end_line": result.payload["end_line"],
+            "symbol": result.payload["symbol"],
             "score": result.score,
         })
 
@@ -161,10 +162,11 @@ def stream_repository_answer(question: str, repository_id: int):
     for result in results:
         payload = result.payload
         sources.append({
-            "file_path": payload["file_path"],
+            "file": payload["file_path"],
             "start_line": payload["start_line"],
-            "end_line":payload["end_line"],
-            "score":result.score,
+            "end_line": payload["end_line"],
+            "symbol": payload["symbol"],
+            "score": result.score,
         })
 
 

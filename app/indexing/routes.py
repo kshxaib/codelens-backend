@@ -34,10 +34,12 @@ def index_repository(repository_id: int, current_user: User = Depends(get_curren
         )
 
 
-    # Repository find karo
+    # Repository row ko lock karo.
+    # Ek time par ek hi request repository ko index karegi.
     repository = (
         db.query(Repository)
         .filter(Repository.id == repository_id)
+        .with_for_update()
         .first()
     )
 
@@ -48,12 +50,25 @@ def index_repository(repository_id: int, current_user: User = Depends(get_curren
         )
 
 
+    # Already indexing hai to second request reject karo
+    if repository.index_status == "indexing":
+        raise HTTPException(
+            status_code=409,
+            detail="Repository indexing is already in progress",
+        )
+
+
     # GitHub token required
     if not current_user.github_access_token:
         raise HTTPException(
             status_code=401,
             detail="GitHub access token not available",
         )
+
+
+    # Indexing start hone se pehle status database me save karo
+    repository.index_status = "indexing"
+    db.commit()
 
 
     # INDEXING
@@ -70,6 +85,9 @@ def index_repository(repository_id: int, current_user: User = Depends(get_curren
         }
 
     except Exception as error:
+        repository.index_status = "failed"
+        db.commit()
+
         raise HTTPException(
             status_code=500,
             detail=f"Indexing failed: {str(error)}",
