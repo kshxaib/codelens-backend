@@ -79,11 +79,13 @@ def ask_repository( question: str, repository_id: int):
     sources = []
 
     for result in results:
+        payload = result.payload
         sources.append({
-            "file": result.payload["file_path"],
-            "start_line": result.payload["start_line"],
-            "end_line": result.payload["end_line"],
-            "symbol": result.payload["symbol"],
+            "file_id": payload.get("file_id"),
+            "file": payload["file_path"],
+            "start_line": payload["start_line"],
+            "end_line": payload["end_line"],
+            "symbol": payload.get("symbol"),
             "score": result.score,
         })
 
@@ -157,15 +159,16 @@ def stream_repository_answer(question: str, repository_id: int):
                 "text": delta.content,
             }
 
-    # 7. SEND SOURCES AT END
+    # 7. SEND SOURCES AT END 
     sources = []
     for result in results:
         payload = result.payload
         sources.append({
+            "file_id": payload.get("file_id"),
             "file": payload["file_path"],
             "start_line": payload["start_line"],
             "end_line": payload["end_line"],
-            "symbol": payload["symbol"],
+            "symbol": payload.get("symbol"),
             "score": result.score,
         })
 

@@ -5,7 +5,7 @@ from datetime import datetime
 
 from app.auth.dependencies import get_current_user
 from app.db.database import get_db
-from app.db.models import User, Repository, RepositoryAccess
+from app.db.models import User, Repository, RepositoryAccess, File
 from app.github.service import GitHubService
 
 
@@ -339,5 +339,48 @@ def parse_github_url(url: str):
 
     # Parsed values return karo
     return owner, name
+
+
+# GET REPOSITORY FILE CONTENT (FOR CODE VIEWER / CITATIONS)
+@router.get("/{repository_id}/files/{file_id}")
+def get_repository_file( repository_id: int, file_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Check karo user ko repository access hai
+    access = (
+        db.query(RepositoryAccess)
+        .filter(
+            RepositoryAccess.user_id == current_user.id,
+            RepositoryAccess.repository_id == repository_id,
+        )
+        .first()
+    )
+
+    if not access:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have access to this repository",
+        )
+
+    # File database se lao
+    file = (
+        db.query(File)
+        .filter(
+            File.id == file_id,
+            File.repository_id == repository_id,
+        )
+        .first()
+    )
+
+    if not file:
+        raise HTTPException(
+            status_code=404,
+            detail="File not found",
+        )
+
+    return {
+        "id": file.id,
+        "file": file.file_path,
+        "language": file.language,
+        "content": file.content,
+    }
 
 
